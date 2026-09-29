@@ -1,0 +1,41 @@
+---
+- name: Create Jenkins application directory
+  ansible.builtin.file:
+    path: "{{ jenkins_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create Jenkins persistent storage directory
+  ansible.builtin.file:
+    path: "{{ jenkins_home_dir }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+
+- name: Deploy Jenkins Docker Compose
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ jenkins_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Start Jenkins
+  community.docker.docker_compose_v2:
+    project_src: "{{ jenkins_app_dir }}"
+    state: present
+
+- name: Deploy Jenkins Nginx configuration
+  ansible.builtin.template:
+    src: jenkins.conf.j2
+    dest: /etc/nginx/conf.d/jenkins.conf
+    mode: "0644"
+
+- name: Test Nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Reload Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded

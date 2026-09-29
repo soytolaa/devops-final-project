@@ -1,0 +1,22 @@
+---
+- name: Test Nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Reload Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+
+- name: Request HTTPS certificate
+  ansible.builtin.command:
+    cmd: >
+      certbot --nginx
+      --non-interactive
+      --agree-tos
+      --redirect
+      --email {{ certbot_email }}
+      -d {{ app_domain }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ app_domain }}/fullchain.pem"

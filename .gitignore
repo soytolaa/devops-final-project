@@ -1,0 +1,9 @@
+.ansible
+.cache
+.config
+.dotnet
+.landscape
+.local
+.ssh
+.vscode-remote-containers
+.vscode-server

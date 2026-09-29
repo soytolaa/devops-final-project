@@ -1,0 +1,85 @@
+---
+- name: Slurp local public SSH key
+  ansible.builtin.slurp:
+    src: "{{ ssh_public_key }}"
+  register: ssh_pub_key
+
+- name: Create Static NAT IPs in GCP
+  google.cloud.gcp_compute_address:
+    name: "{{ item.static_ip }}"
+    region: "{{ (item.zone | default(default_spec.zone)) | regex_replace('-[a-z]$', '') }}"
+    project: "{{ google_project_id }}"
+    address_type: EXTERNAL
+    auth_kind: application
+    state: present
+  environment:
+    GOOGLE_APPLICATION_CREDENTIALS: "{{ adc_path }}"
+  loop: "{{ machine_info }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: gcp_static_ips
+
+- name: Create GCP Compute Instances
+  google.cloud.gcp_compute_instance:
+    name: "{{ item.name }}"
+    machine_type: "{{ item.machine_type | default(default_spec.machine_type) }}"
+    zone: "{{ item.zone | default(default_spec.zone) }}"
+    project: "{{ google_project_id }}"
+    auth_kind: application
+    state: present
+    metadata:
+      ssh-keys: "{{ ansible_user }}:{{ (ssh_pub_key['content'] | b64decode) | trim }}"
+    disks:
+      - auto_delete: true
+        boot: true
+        initialize_params:
+          disk_size_gb: "{{ item.disk_size | default(default_spec.disk_size) }}"
+          disk_type: "{{ item.disk_type | default(default_spec.disk_type) }}"
+          source_image: "{{ item.image | default(default_spec.image) }}"
+    network_interfaces:
+      - network:
+          selfLink: "projects/{{ google_project_id }}/global/networks/default"
+        access_configs:
+          - name: External NAT
+            type: ONE_TO_ONE_NAT
+            nat_ip:
+              address: "{{ (gcp_static_ips.results | selectattr('item.static_ip', 'equalto', item.static_ip) | map(attribute='address') | first) }}"
+    tags:
+      items:
+        - http-server
+        - https-server
+  environment:
+    GOOGLE_APPLICATION_CREDENTIALS: "{{ adc_path }}"
+  loop: "{{ machine_info }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: gcp_instances
+
+- name: Register created instances dynamically into inventory
+  ansible.builtin.add_host:
+    name: "{{ item.1.networkInterfaces[0].accessConfigs[0].natIP }}"
+    groups: "{{ item.0.role }}"
+    ansible_user: "{{ ansible_user }}"
+    ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file }}"
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
+  loop: "{{ machine_info | zip(gcp_instances.results) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+
+- name: Wait for SSH port 22 on all instances
+  ansible.builtin.wait_for:
+    host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+    port: 22
+    state: started
+    delay: 10
+    timeout: 180
+  loop: "{{ gcp_instances.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Save instance IPs to inventory.ini
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../templates/inventory.ini.j2"
+    dest: "{{ playbook_dir }}/../inventory.ini"
+    mode: "0644"
+

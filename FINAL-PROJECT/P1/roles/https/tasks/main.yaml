@@ -1,0 +1,15 @@
+---
+- name: Configure Jenkins HTTPS
+  ansible.builtin.import_tasks: certbot.yaml
+  vars:
+    app_domain: "jenkins.{{ domain_name }}"
+
+- name: Configure SonarQube HTTPS
+  ansible.builtin.import_tasks: certbot.yaml
+  vars:
+    app_domain: "sonarqube.{{ domain_name }}"
+
+- name: Configure Nexus HTTPS
+  ansible.builtin.import_tasks: certbot.yaml
+  vars:
+    app_domain: "nexus.{{ domain_name }}"

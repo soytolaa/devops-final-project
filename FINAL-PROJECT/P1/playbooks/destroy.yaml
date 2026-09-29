@@ -1,0 +1,33 @@
+---
+- name: Destroy all GCP infrastructure
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yaml
+
+  tasks:
+    - name: Delete all GCP Compute Instances
+      google.cloud.gcp_compute_instance:
+        name: "{{ item.name }}"
+        zone: "{{ item.zone | default(default_spec.zone) }}"
+        project: "{{ google_project_id }}"
+        auth_kind: application
+        state: absent
+      environment:
+        GOOGLE_APPLICATION_CREDENTIALS: "{{ adc_path }}"
+      loop: "{{ machine_info }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Release all Static External IPs
+      google.cloud.gcp_compute_address:
+        name: "{{ item.static_ip }}"
+        region: "{{ (item.zone | default(default_spec.zone)) | regex_replace('-[a-z]$', '') }}"
+        project: "{{ google_project_id }}"
+        auth_kind: application
+        state: absent
+      environment:
+        GOOGLE_APPLICATION_CREDENTIALS: "{{ adc_path }}"
+      loop: "{{ machine_info }}"
+      loop_control:
+        label: "{{ item.static_ip }}"

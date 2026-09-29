@@ -1,0 +1,9 @@
+---
+- name: Create Jenkins Domain
+  ansible.builtin.import_tasks: jenkins.yaml
+
+- name: Create SonarQube Domain
+  ansible.builtin.import_tasks: sonarqube.yaml
+
+- name: Create Nexus Domain
+  ansible.builtin.import_tasks: nexus.yaml

@@ -1,0 +1,6 @@
+---
+sonarqube_app_dir: "/opt/sonarqube-app"
+sonarqube_base_dir: "/opt/sonarqube"
+sonarqube_port: 9000
+sonarqube_image: "sonarqube:lts-community"
+sonarqube_domain: "sonarqube.{{ domain_name }}"

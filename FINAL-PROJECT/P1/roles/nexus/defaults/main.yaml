@@ -1,0 +1,6 @@
+---
+nexus_app_dir: "/opt/nexus-app"
+nexus_data_dir: "/opt/nexus-data"
+nexus_port: 8081
+nexus_image: "sonatype/nexus3:latest"
+nexus_domain: "nexus.{{ domain_name }}"

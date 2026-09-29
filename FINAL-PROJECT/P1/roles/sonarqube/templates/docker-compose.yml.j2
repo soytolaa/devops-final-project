@@ -1,0 +1,11 @@
+services:
+  sonarqube:
+    image: {{ sonarqube_image }}
+    container_name: sonarqube
+    restart: always
+    ports:
+      - "127.0.0.1:{{ sonarqube_port }}:9000"
+    volumes:
+      - {{ sonarqube_base_dir }}/data:/opt/sonarqube/data
+      - {{ sonarqube_base_dir }}/extensions:/opt/sonarqube/extensions
+      - {{ sonarqube_base_dir }}/logs:/opt/sonarqube/logs

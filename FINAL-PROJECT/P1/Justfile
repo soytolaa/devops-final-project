@@ -1,0 +1,7 @@
+# Create GCP VMs
+create-vm:
+    ansible-playbook playbooks/create.yaml
+
+# Destroy GCP VMs
+destroy-vm:
+    ansible-playbook playbooks/destroy.yaml

@@ -1,0 +1,43 @@
+---
+- name: Install system packages
+  ansible.builtin.apt:
+    name:
+      - tree
+      - gh
+      - zsh
+      - curl
+      - git
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: true
+
+- name: Enable and start Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Check if Oh My Zsh is installed
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user }}/.oh-my-zsh/oh-my-zsh.sh"
+  register: omz_stat
+  become: false
+
+- name: Remove incomplete Oh My Zsh installation
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.oh-my-zsh"
+    state: absent
+  become: false
+  when: not omz_stat.stat.exists
+
+- name: Install Oh My Zsh
+  ansible.builtin.shell: |
+    RUNZSH=no
+    CHSH=no
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  args:
+    executable: /bin/bash
+  become: false
+  when: not omz_stat.stat.exists
