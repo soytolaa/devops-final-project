@@ -1,26 +1,28 @@
-[jenkins]
-{% for result in gcp_instances.results %}
-{% if result.item.role == "jenkins" %}
-{{ result.item.name }} ansible_host={{ result.networkInterfaces[0].accessConfigs[0].natIP }}
+[localhost]
+localNode ansible_connection=local
+
+[jenkins_servers]
+{% for result in gcp_instances.results | default([]) %}
+{% if result.item.role == "jenkins" or result.item.name == "jenkins" %}
+{{ result.item.name }} ansible_host={{ result.gcp_instance.networkInterfaces[0].accessConfigs[0].natIP | default(ip_map[result.item.name]) }}
 {% endif %}
 {% endfor %}
 
-[sonarqube]
-{% for result in gcp_instances.results %}
-{% if result.item.role == "sonarqube" %}
-{{ result.item.name }} ansible_host={{ result.networkInterfaces[0].accessConfigs[0].natIP }}
+[sonarqube_servers]
+{% for result in gcp_instances.results | default([]) %}
+{% if result.item.role == "sonarqube" or result.item.name == "sonarqube" %}
+{{ result.item.name }} ansible_host={{ result.gcp_instance.networkInterfaces[0].accessConfigs[0].natIP | default(ip_map[result.item.name]) }}
 {% endif %}
 {% endfor %}
 
-[nexus]
-{% for result in gcp_instances.results %}
-{% if result.item.role == "nexus" %}
-{{ result.item.name }} ansible_host={{ result.networkInterfaces[0].accessConfigs[0].natIP }}
+[nexus_servers]
+{% for result in gcp_instances.results | default([]) %}
+{% if result.item.role == "nexus" or result.item.name == "nexus" %}
+{{ result.item.name }} ansible_host={{ result.gcp_instance.networkInterfaces[0].accessConfigs[0].natIP | default(ip_map[result.item.name]) }}
 {% endif %}
 {% endfor %}
-
 
 [all:vars]
 ansible_user={{ ansible_user }}
-ansible_ssh_private_key_file={{ ansible_ssh_private_key_file }}
 ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'

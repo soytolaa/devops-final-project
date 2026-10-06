@@ -24,10 +24,10 @@ ansible_ssh_private_key_file: "/home/ts/.ssh/id_ed25519"
 # Default Infrastructure Specifications
 # ============================================================
 default_spec:
-  machine_type: "e2-small"
-  zone: "asia-southeast1-b"
-  disk_size: 40
-  disk_type: "pd-standard"
+  machine_type: "e2-standard-2"
+  zone: "asia-southeast1-c"
+  disk_size: 50
+  disk_type: "pd-standard" # we have hdd(pd-standard) , ssd( pd-ssd)
   image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2404-lts-amd64"
 
 

@@ -1,7 +1,26 @@
-# Create GCP VMs
-create-vm:
-    ansible-playbook playbooks/create.yaml
+# Default recipe to list available commands
+default:
+    @just --list
+
+# Create GCP VMs and build inventory
+up:
+    ansible-playbook playbooks/up.yaml
+
+# Apply common configurations
+common:
+    ansible-playbook -i inventory.ini playbooks/common.yaml
+
+# Deploy applications (Jenkins, SonarQube, Nexus)
+deploy:
+    ansible-playbook -i inventory.ini playbooks/deploy.yaml
+
+# Configure Cloudflare DNS and HTTPS Certbot certificates
+https:
+    ansible-playbook -i inventory.ini playbooks/https.yaml
 
 # Destroy GCP VMs
-destroy-vm:
-    ansible-playbook playbooks/destroy.yaml
+down:
+    ansible-playbook playbooks/down.yaml
+
+# End-to-end full provisioning pipeline
+all: up common deploy https

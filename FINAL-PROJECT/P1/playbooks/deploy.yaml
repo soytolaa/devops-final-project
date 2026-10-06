@@ -1,0 +1,17 @@
+- name: Deploy Jenkins Application (Node 1)
+  hosts: jenkins_servers
+  become: true
+  roles:
+    - role: jenkins
+
+- name: Deploy SonarQube Application (Node 2)
+  hosts: sonarqube_servers
+  become: true
+  roles:
+    - role: sonarqube
+
+- name: Deploy Nexus Application (Node 3)
+  hosts: nexus_servers
+  become: true
+  roles:
+    - role: nexus

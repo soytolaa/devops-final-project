@@ -1,9 +1,13 @@
 ---
-- name: Create Jenkins Domain
-  ansible.builtin.import_tasks: jenkins.yaml
-
-- name: Create SonarQube Domain
-  ansible.builtin.import_tasks: sonarqube.yaml
-
-- name: Create Nexus Domain
-  ansible.builtin.import_tasks: nexus.yaml
+- name: Create Cloudflare DNS records
+  community.general.cloudflare_dns:
+    zone: "{{ domain_name }}"
+    record: "{{ item.role | default(item.name) }}"
+    type: A
+    value: "{{ hostvars[item.name]['ansible_host'] }}"
+    api_token: "{{ cloudflare_api_token }}"
+    proxied: false
+    state: present
+  loop: "{{ machine_info }}"
+  loop_control:
+    label: "{{ item.name }} -> {{ hostvars[item.name]['ansible_host'] }}"

@@ -1,0 +1,7 @@
+---
+- name: Create GCP Compute Infrastructure
+  hosts: localhost
+  gather_facts: false
+  become: false
+  roles:
+    - role: gcp_infra

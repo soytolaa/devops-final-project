@@ -1,4 +1,3 @@
----
 - name: Install system packages
   ansible.builtin.apt:
     name:
@@ -19,25 +18,32 @@
     state: started
     enabled: true
 
+- name: Resolve user home directory
+  ansible.builtin.set_fact:
+    target_user_home: "{{ ansible_user }}"
+
 - name: Check if Oh My Zsh is installed
   ansible.builtin.stat:
-    path: "/home/{{ ansible_user }}/.oh-my-zsh/oh-my-zsh.sh"
+    path: "{{ target_user_home }}/.oh-my-zsh/oh-my-zsh.sh"
   register: omz_stat
-  become: false
 
-- name: Remove incomplete Oh My Zsh installation
+- name: Check if Oh My Zsh directory exists
+  ansible.builtin.stat:
+    path: "{{ target_user_home }}/.oh-my-zsh"
+  register: omz_dir_stat
+
+- name: Remove incomplete Oh My Zsh directory
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.oh-my-zsh"
+    path: "{{ target_user_home }}/.oh-my-zsh"
     state: absent
-  become: false
-  when: not omz_stat.stat.exists
+  when:
+    - omz_dir_stat.stat.exists
+    - not omz_stat.stat.exists
 
 - name: Install Oh My Zsh
   ansible.builtin.shell: |
-    RUNZSH=no
-    CHSH=no
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
   args:
     executable: /bin/bash
-  become: false
+    creates: "{{ target_user_home }}/.oh-my-zsh/oh-my-zsh.sh"
   when: not omz_stat.stat.exists

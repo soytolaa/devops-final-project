@@ -1,0 +1,17 @@
+---
+# Configure Cloudflare DNS
+- name: Configure Cloudflare DNS
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars_files:
+    - ../group_vars/vault-dns.yaml
+  roles:
+    - role: dns
+
+# Configure HTTPS across all application nodes
+- name: Configure HTTPS
+  hosts: jenkins_servers:sonarqube_servers:nexus_servers
+  become: true
+  roles:
+    - role: https

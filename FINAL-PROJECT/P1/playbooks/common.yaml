@@ -1,0 +1,6 @@
+- name: Apply Common configurations
+  hosts: jenkins_servers:sonarqube_servers:nexus_servers
+  become: true
+  roles:
+    - role: common
+    - role: docker

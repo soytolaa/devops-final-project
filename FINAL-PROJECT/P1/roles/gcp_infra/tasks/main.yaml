@@ -19,6 +19,13 @@
     label: "{{ item.name }}"
   register: gcp_static_ips
 
+- name: Build static IP lookup dictionary
+  ansible.builtin.set_fact:
+    ip_map: "{{ ip_map | default({}) | combine({item.item.name: item.address}) }}"
+  loop: "{{ gcp_static_ips.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
 - name: Create GCP Compute Instances
   google.cloud.gcp_compute_instance:
     name: "{{ item.name }}"
@@ -43,43 +50,37 @@
           - name: External NAT
             type: ONE_TO_ONE_NAT
             nat_ip:
-              address: "{{ (gcp_static_ips.results | selectattr('item.static_ip', 'equalto', item.static_ip) | map(attribute='address') | first) }}"
+              address: "{{ ip_map[item.name] }}"
     tags:
       items:
         - http-server
         - https-server
   environment:
     GOOGLE_APPLICATION_CREDENTIALS: "{{ adc_path }}"
+    GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES: "1"
   loop: "{{ machine_info }}"
   loop_control:
     label: "{{ item.name }}"
   register: gcp_instances
 
-- name: Register created instances dynamically into inventory
-  ansible.builtin.add_host:
-    name: "{{ item.1.networkInterfaces[0].accessConfigs[0].natIP }}"
-    groups: "{{ item.0.role }}"
-    ansible_user: "{{ ansible_user }}"
-    ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file }}"
-    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
-  loop: "{{ machine_info | zip(gcp_instances.results) | list }}"
-  loop_control:
-    label: "{{ item.0.name }}"
-
-- name: Wait for SSH port 22 on all instances
-  ansible.builtin.wait_for:
-    host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
-    port: 22
-    state: started
-    delay: 10
-    timeout: 180
-  loop: "{{ gcp_instances.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-
 - name: Save instance IPs to inventory.ini
   ansible.builtin.template:
     src: "{{ playbook_dir }}/../templates/inventory.ini.j2"
     dest: "{{ playbook_dir }}/../inventory.ini"
-    mode: "0644"
 
+- name: Register created instances dynamically into active inventory
+  ansible.builtin.add_host:
+    name: "{{ item.item.name }}"
+    ansible_host: "{{ item.gcp_instance.networkInterfaces[0].accessConfigs[0].natIP }}"
+    groups: >-
+      {% if item.item.role == "jenkins" or item.item.name == "jenkins" or item.item.name == "ts-node01" %}
+      jenkins_servers
+      {% elif item.item.role == "sonarqube" or item.item.name == "sonarqube" or item.item.name == "ts-node02" %}
+      sonarqube_servers
+      {% elif item.item.role == "nexus" or item.item.name == "nexus" or item.item.name == "ts-node03" %}
+      nexus_servers
+      {% endif %}
+  loop: "{{ gcp_instances.results }}"
+  when:
+    - item.gcp_instance is defined
+    - item.gcp_instance.networkInterfaces is defined

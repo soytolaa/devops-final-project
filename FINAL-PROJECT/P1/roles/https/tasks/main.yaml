@@ -1,15 +1,15 @@
 ---
-- name: Configure Jenkins HTTPS
-  ansible.builtin.import_tasks: certbot.yaml
-  vars:
-    app_domain: "jenkins.{{ domain_name }}"
+- name: Set domain name based on target host group
+  ansible.builtin.set_fact:
+    app_domain: >-
+      {% if 'jenkins_servers' in group_names %}
+      jenkins.{{ domain_name }}
+      {% elif 'sonarqube_servers' in group_names %}
+      sonarqube.{{ domain_name }}
+      {% elif 'nexus_servers' in group_names %}
+      nexus.{{ domain_name }}
+      {% endif %}
 
-- name: Configure SonarQube HTTPS
-  ansible.builtin.import_tasks: certbot.yaml
-  vars:
-    app_domain: "sonarqube.{{ domain_name }}"
-
-- name: Configure Nexus HTTPS
-  ansible.builtin.import_tasks: certbot.yaml
-  vars:
-    app_domain: "nexus.{{ domain_name }}"
+- name: Request and configure Certbot SSL certificate
+  ansible.builtin.include_tasks: certbot.yaml
+  when: app_domain is defined
