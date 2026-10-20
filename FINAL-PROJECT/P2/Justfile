@@ -1,0 +1,2 @@
+kubespray-up:
+    ansible-playbook playbooks/kubespray-up.yaml
